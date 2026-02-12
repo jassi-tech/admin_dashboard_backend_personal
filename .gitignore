@@ -1,1 +1,4 @@
-node_modules\n.env\ndist
+node_modules
+dist
+.env
+serviceAccountKey.json

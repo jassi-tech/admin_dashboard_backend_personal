@@ -1,16 +1,18 @@
-import express from 'express';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
+import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import dotenv from "dotenv";
 
 dotenv.config();
 
 const app = express();
 
-app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:3001'],
-    credentials: true
-}));
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "http://localhost:3001"],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(cookieParser());
 
@@ -26,8 +28,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/projects", projectsRoutes);
 app.use("/api/locations", locationRoutes);
 
-app.get('/', (req, res) => {
-    res.json({ message: 'Admin API is running' });
+app.get("/", (req, res) => {
+  res.json({ message: "Admin API is running" });
 });
 
 export default app;

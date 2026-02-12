@@ -1,26 +1,27 @@
 import type { Request, Response } from 'express';
-import fs from 'fs/promises';
-import path from 'path';
+import { db } from '../lib/firebase';
 
-const DB_FILE = path.join(process.cwd(), 'src/data/db.json');
+const COLLECTION = 'projects';
 
 export const getProjects = async (req: Request, res: Response) => {
     try {
-        const data = await fs.readFile(DB_FILE, 'utf-8');
-        const db = JSON.parse(data);
-        // Map to return only names and statuses for the list view
-        const projectList = db.projects.map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            status: p.status,
-            url: p.url,
-            isLive: p.isLive,
-            country: p.country,
-            deployments: p.deployments
-        }));
+        // Admin SDK: db.collection().get()
+        const querySnapshot = await db.collection(COLLECTION).get();
+        const projectList = querySnapshot.docs.map(doc => {
+            const p = doc.data();
+            return {
+                id: doc.id,
+                name: p.name,
+                status: p.status,
+                url: p.url,
+                isLive: p.isLive,
+                country: p.country,
+                deployments: p.deployments
+            };
+        });
         res.json(projectList);
     } catch (error) {
-        console.error('Error reading db file:', error);
+
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -28,17 +29,16 @@ export const getProjects = async (req: Request, res: Response) => {
 export const getProjectDetails = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const data = await fs.readFile(DB_FILE, 'utf-8');
-        const db = JSON.parse(data);
-        const project = db.projects.find((p: any) => p.id === id);
+        // Admin SDK: db.collection().doc().get()
+        const docSnap = await db.collection(COLLECTION).doc(id as string).get();
         
-        if (!project) {
+        if (!docSnap.exists) {
             return res.status(404).json({ message: 'Project not found' });
         }
         
-        res.json(project);
+        res.json({ id: docSnap.id, ...docSnap.data() });
     } catch (error) {
-        console.error('Error reading db file:', error);
+
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -46,23 +46,21 @@ export const getProjectDetails = async (req: Request, res: Response) => {
 export const checkProjectStatus = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const data = await fs.readFile(DB_FILE, 'utf-8');
-        const db = JSON.parse(data);
-        
-        const projectIndex = db.projects.findIndex((p: any) => p.id === id);
-        if (projectIndex === -1) {
+        // Admin SDK: db.collection().doc()
+        const docRef = db.collection(COLLECTION).doc(id as string);
+        const docSnap = await docRef.get();
+
+        if (!docSnap.exists) {
             return res.status(404).json({ message: 'Project not found' });
         }
         
-        // Update lastChecked time
-        db.projects[projectIndex].lastChecked = new Date().toISOString();
+        const lastChecked = new Date().toISOString();
+        // Admin SDK: doc.update()
+        await docRef.update({ lastChecked });
         
-        // Save back to DB
-        await fs.writeFile(DB_FILE, JSON.stringify(db, null, 4));
-        
-        res.json(db.projects[projectIndex]);
+        res.json({ id, ...docSnap.data(), lastChecked });
     } catch (error) {
-        console.error('Error checking project status:', error);
+
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -70,11 +68,12 @@ export const checkProjectStatus = async (req: Request, res: Response) => {
 export const createProject = async (req: Request, res: Response) => {
     try {
         const { name, url, country } = req.body;
-        const data = await fs.readFile(DB_FILE, 'utf-8');
-        const db = JSON.parse(data);
         
+        if (!name || !url || !country) {
+             return res.status(400).json({ message: 'Missing required fields' });
+        }
+
         const newProject = {
-            id: (db.projects.length + 1).toString(),
             name,
             url,
             status: 'Stable',
@@ -92,12 +91,12 @@ export const createProject = async (req: Request, res: Response) => {
             }
         };
         
-        db.projects.push(newProject);
-        await fs.writeFile(DB_FILE, JSON.stringify(db, null, 4));
+        // Admin SDK: db.collection().add()
+        const docRef = await db.collection(COLLECTION).add(newProject);
         
-        res.status(201).json(newProject);
+        res.status(201).json({ id: docRef.id, ...newProject });
     } catch (error) {
-        console.error('Error creating project:', error);
+
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -105,20 +104,19 @@ export const createProject = async (req: Request, res: Response) => {
 export const deleteProject = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const data = await fs.readFile(DB_FILE, 'utf-8');
-        const db = JSON.parse(data);
-        
-        const initialLength = db.projects.length;
-        db.projects = db.projects.filter((p: any) => p.id !== id);
-        
-        if (db.projects.length === initialLength) {
+        // Admin SDK: db.collection().doc()
+        const docRef = db.collection(COLLECTION).doc(id as string);
+        const docSnap = await docRef.get();
+
+        if (!docSnap.exists) {
             return res.status(404).json({ message: 'Project not found' });
         }
         
-        await fs.writeFile(DB_FILE, JSON.stringify(db, null, 4));
+        // Admin SDK: doc.delete()
+        await docRef.delete();
         res.json({ message: 'Project deleted successfully' });
     } catch (error) {
-        console.error('Error deleting project:', error);
+
         res.status(500).json({ message: 'Internal server error' });
     }
 };
