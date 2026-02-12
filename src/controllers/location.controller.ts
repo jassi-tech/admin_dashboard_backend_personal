@@ -1,10 +1,17 @@
-export type Location = [number, number, string];
+import { Request, Response } from 'express';
+import { db } from '../lib/firebase';
 
-export const locations: Location[] = [
-  [28.6139, 77.209, 'User 1: New Delhi'],
-  [30.710807653239343,76.71079510757333, 'User 2: Chandigarh'],
-];
-
-export const getLocations = (req: any, res: any) => {
-    res.json(locations);
+export const getLocations = async (req: Request, res: Response) => {
+    try {
+        // Admin SDK: db.collection().get()
+        const querySnapshot = await db.collection('locations').get();
+        const locations = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        res.json(locations);
+    } catch (error) {
+        console.error('Error fetching locations from Firestore:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
 };
