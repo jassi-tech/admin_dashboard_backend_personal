@@ -5,28 +5,70 @@ import path from 'path';
 
 dotenv.config();
 
+// Helper to sanitize the private key
+const sanitizeKey = (key: string | undefined): string | undefined => {
+    if (!key) return undefined;
+    
+    let s = key.trim();
+    // 1. Remove surrounding quotes
+    if (s.startsWith('"') && s.endsWith('"')) {
+        s = s.substring(1, s.length - 1);
+    }
+    
+    // 2. Extract body between headers
+    const header = '-----BEGIN PRIVATE KEY-----';
+    const footer = '-----END PRIVATE KEY-----';
+    
+    // Replace literal \n with actual newlines first
+    s = s.split('\\n').join('\n');
+    
+    if (s.includes(header) && s.includes(footer)) {
+        const body = s.substring(s.indexOf(header) + header.length, s.indexOf(footer))
+                      .replace(/\s/g, ''); // Remove ALL whitespace
+        const formattedBody = body.match(/.{1,64}/g)?.join('\n');
+        return `${header}\n${formattedBody}\n${footer}\n`;
+    }
+    
+    return s;
+};
+
 // Initialize Firebase Admin SDK
 if (!admin.apps.length) {
     try {
-        const serviceAccountPath = path.join(process.cwd(), 'serviceAccountKey.json');
+        const renderSecretPath = '/etc/secrets/serviceAccountKey.json';
+        const localSecretPath = path.join(process.cwd(), 'serviceAccountKey.json');
+        const scriptSecretPath = path.join(process.cwd(), 'src', 'scripts', 'serviceAccountKey.json');
         
-        // Generate serviceAccountKey.json from environment variables if it doesn't exist
-        if (!fs.existsSync(serviceAccountPath)) {
-            console.log('⚙️  Generating serviceAccountKey.json from environment variables...');
+        let credential;
+
+        if (fs.existsSync(renderSecretPath)) {
+            console.log('✅ Found Render secret file at /etc/secrets/serviceAccountKey.json');
+            credential = admin.credential.cert(renderSecretPath);
+        } else if (fs.existsSync(localSecretPath)) {
+            console.log('✅ Found local serviceAccountKey.json');
+            credential = admin.credential.cert(localSecretPath);
+        } else if (fs.existsSync(scriptSecretPath)) {
+            console.log('✅ Found local serviceAccountKey.json in src/scripts/');
+            credential = admin.credential.cert(scriptSecretPath);
+        } else {
+            console.log('⚙️  Initializing Firebase Admin SDK from environment variables...');
             
             const serviceAccount = {
-                type: "service_account",
+                type: 'service_account',
                 project_id: process.env.FIREBASE_PROJECT_ID,
-                private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
                 client_email: process.env.FIREBASE_CLIENT_EMAIL,
+                private_key: sanitizeKey(process.env.FIREBASE_PRIVATE_KEY),
             };
-            
-            fs.writeFileSync(serviceAccountPath, JSON.stringify(serviceAccount, null, 2));
-            console.log('✅ serviceAccountKey.json generated successfully');
+
+            if (!serviceAccount.project_id || !serviceAccount.private_key || !serviceAccount.client_email) {
+                throw new Error('Missing essential Firebase environment variables (PROJECT_ID, PRIVATE_KEY, or CLIENT_EMAIL)');
+            }
+
+            credential = admin.credential.cert(serviceAccount as any);
         }
         
         admin.initializeApp({
-            credential: admin.credential.cert(serviceAccountPath),
+            credential,
         });
         
         console.log('✅ Firebase Admin SDK initialized successfully.');
