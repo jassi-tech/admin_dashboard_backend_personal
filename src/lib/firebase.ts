@@ -15,10 +15,7 @@ if (!admin.apps.length) {
         
         console.log('✅ Firebase Admin SDK initialized successfully.');
     } catch (error: any) {
-        console.error('❌ Firebase Admin SDK failed to initialize:');
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-        console.error('Please ensure serviceAccountKey.json exists and is properly formatted.');
+
         throw error; // Don't continue if Admin SDK fails
     }
 }

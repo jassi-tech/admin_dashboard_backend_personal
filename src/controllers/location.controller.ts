@@ -11,7 +11,7 @@ export const getLocations = async (req: Request, res: Response) => {
         }));
         res.json(locations);
     } catch (error) {
-        console.error('Error fetching locations from Firestore:', error);
+
         res.status(500).json({ message: 'Internal server error' });
     }
 };

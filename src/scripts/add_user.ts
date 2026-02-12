@@ -21,7 +21,7 @@ async function addUser() {
         const name = await question('Enter name (optional): ');
         
         if (!email || !password) {
-            console.error('❌ Email and password are required!');
+
             rl.close();
             return;
         }
@@ -44,7 +44,7 @@ async function addUser() {
         
         rl.close();
     } catch (error: any) {
-        console.error('\n❌ Error adding user:', error.message);
+
         rl.close();
     }
 }

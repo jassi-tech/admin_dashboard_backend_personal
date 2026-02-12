@@ -22,7 +22,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
             recentActivity
         });
     } catch (error) {
-        console.error('Error fetching dashboard stats from Firestore:', error);
+
         res.status(500).json({ message: 'Internal server error' });
     }
 };

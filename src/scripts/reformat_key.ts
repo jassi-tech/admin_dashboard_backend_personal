@@ -25,5 +25,5 @@ if (serviceAccount.project_id && serviceAccount.private_key && serviceAccount.cl
     fs.writeFileSync('serviceAccountKey.json', JSON.stringify(serviceAccount, null, 2));
     console.log('serviceAccountKey.json regenerated with 64-char wrapping');
 } else {
-    console.error('Missing credentials in .env');
+
 }

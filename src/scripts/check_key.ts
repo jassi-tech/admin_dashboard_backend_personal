@@ -18,11 +18,10 @@ if (privateKey) {
         const result = execSync('openssl rsa -check -in test_key.pem -noout', { encoding: 'utf-8' });
         console.log('OpenSSL Result:', result || 'RSA key is valid');
     } catch (error: any) {
-        console.error('OpenSSL Check Failed:');
-        console.error(error.stderr || error.message);
+
     } finally {
         // fs.unlinkSync('test_key.pem');
     }
 } else {
-    console.error('No private key found in .env');
+
 }

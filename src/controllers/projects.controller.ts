@@ -21,7 +21,7 @@ export const getProjects = async (req: Request, res: Response) => {
         });
         res.json(projectList);
     } catch (error) {
-        console.error('Error fetching projects from Firestore:', error);
+
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -38,7 +38,7 @@ export const getProjectDetails = async (req: Request, res: Response) => {
         
         res.json({ id: docSnap.id, ...docSnap.data() });
     } catch (error) {
-        console.error('Error fetching project details from Firestore:', error);
+
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -60,7 +60,7 @@ export const checkProjectStatus = async (req: Request, res: Response) => {
         
         res.json({ id, ...docSnap.data(), lastChecked });
     } catch (error) {
-        console.error('Error updating project status in Firestore:', error);
+
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -69,6 +69,10 @@ export const createProject = async (req: Request, res: Response) => {
     try {
         const { name, url, country } = req.body;
         
+        if (!name || !url || !country) {
+             return res.status(400).json({ message: 'Missing required fields' });
+        }
+
         const newProject = {
             name,
             url,
@@ -92,7 +96,7 @@ export const createProject = async (req: Request, res: Response) => {
         
         res.status(201).json({ id: docRef.id, ...newProject });
     } catch (error) {
-        console.error('Error creating project in Firestore:', error);
+
         res.status(500).json({ message: 'Internal server error' });
     }
 };
@@ -112,7 +116,7 @@ export const deleteProject = async (req: Request, res: Response) => {
         await docRef.delete();
         res.json({ message: 'Project deleted successfully' });
     } catch (error) {
-        console.error('Error deleting project from Firestore:', error);
+
         res.status(500).json({ message: 'Internal server error' });
     }
 };
