@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { db } from '../lib/firebase';
-import { collection, doc, setDoc } from 'firebase/firestore';
+
 
 const DB_FILE = path.join(process.cwd(), 'src/data/db.json');
 
@@ -18,10 +18,10 @@ const migrate = async () => {
             if (Array.isArray(items)) {
                 for (const [index, item] of items.entries()) {
                     const docId = item.id?.toString() || item.key?.toString() || (index + 1).toString();
-                    await setDoc(doc(db, collectionName, docId), item);
+                    await db.collection(collectionName).doc(docId).set(item);
                 }
             } else if (typeof items === 'object' && items !== null) {
-                await setDoc(doc(db, collectionName, 'main'), items);
+                await db.collection(collectionName).doc('main').set(items);
             }
         }
 
