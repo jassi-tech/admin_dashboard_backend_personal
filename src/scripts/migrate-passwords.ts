@@ -7,7 +7,7 @@
  * Usage: npx ts-node src/scripts/migrate-passwords.ts
  */
 
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { db } from '../lib/firebase';
 
 const SALT_ROUNDS = 10;
