@@ -10,10 +10,24 @@ const app = express();
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "https://admin-dasboard-persoanl.vercel.app"
-    ],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      
+      const allowedOrigins = [
+        "http://localhost:3000",
+        "http://localhost:3001"
+      ];
+      
+      const isVercelProject = origin.includes("admin-dasboard-persoanl") && origin.endsWith(".vercel.app");
+      
+      if (allowedOrigins.includes(origin) || isVercelProject) {
+        callback(null, true);
+      } else {
+        console.log('Blocked by CORS:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   }),
 );
