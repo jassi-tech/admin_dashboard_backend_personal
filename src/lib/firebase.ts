@@ -15,21 +15,25 @@ const sanitizeKey = (key: string | undefined): string | undefined => {
         s = s.substring(1, s.length - 1);
     }
     
-    // 2. Extract body between headers
+    // 2. Replace literal \n with actual newlines
+    s = s.split('\\n').join('\n');
+    
+    // 3. Bulletproof PEM Fixer: Strip backslashes and re-wrap the body
     const header = '-----BEGIN PRIVATE KEY-----';
     const footer = '-----END PRIVATE KEY-----';
     
-    // Replace literal \n with actual newlines first
-    s = s.split('\\n').join('\n');
-    
     if (s.includes(header) && s.includes(footer)) {
-        const body = s.substring(s.indexOf(header) + header.length, s.indexOf(footer))
-                      .replace(/\s/g, ''); // Remove ALL whitespace
-        const formattedBody = body.match(/.{1,64}/g)?.join('\n');
-        return `${header}\n${formattedBody}\n${footer}\n`;
+        // Extract body, strip all whitespace AND backslashes (\ from shell continuation)
+        const bodyContent = s.substring(s.indexOf(header) + header.length, s.indexOf(footer))
+                             .replace(/[\s\\]/g, ''); 
+        
+        // Re-wrap body at 64 characters per line (standard PEM)
+        const wrappedBody = bodyContent.match(/.{1,64}/g)?.join('\n');
+        
+        return `${header}\n${wrappedBody}\n${footer}\n`;
     }
     
-    return s;
+    return s.endsWith('\n') ? s : `${s}\n`;
 };
 
 // Initialize Firebase Admin SDK
