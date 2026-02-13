@@ -73,8 +73,16 @@ if (!admin.apps.length) {
         
         console.log('✅ Firebase Admin SDK initialized successfully.');
     } catch (error: any) {
-        console.error('❌ Firebase Admin SDK initialization failed:', error.message);
-        throw error; // Don't continue if Admin SDK fails
+        console.error('CRITICAL: Firebase Admin SDK initialization failed.');
+        console.error('Error Details:', error.message);
+        console.error('Stack Trace:', error.stack);
+        // On Vercel, we might want to log exactly what's missing since we can't see the env
+        console.log('Environment Debug:');
+        console.log('- FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID ? 'Set' : 'MISSING');
+        console.log('- FIREBASE_CLIENT_EMAIL:', process.env.FIREBASE_CLIENT_EMAIL ? 'Set' : 'MISSING');
+        console.log('- FIREBASE_PRIVATE_KEY:', process.env.FIREBASE_PRIVATE_KEY ? (process.env.FIREBASE_PRIVATE_KEY.length > 50 ? 'Set (Long)' : 'Set (Short/Suspect)') : 'MISSING');
+        
+        // We DON'T throw here to allow the app to boot and show 500s on routes instead of crashing the whole runtime
     }
 }
 
